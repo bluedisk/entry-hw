@@ -1,5 +1,3 @@
-const _isPlainObject = require('lodash/isPlainObject');
-
 function Module() {
     this.sp = null;
     this.sensorTypes = {
@@ -334,7 +332,7 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
         }
         case this.sensorTypes.TONE: {
             var time = new Buffer(2);
-            if(_isPlainObject(data)) {
+            if($.isPlainObject(data)) {
                 value.writeInt16LE(data.value);
                 time.writeInt16LE(data.duration);
             } else {
@@ -349,7 +347,7 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
         case this.sensorTypes.MOTOR_LEFT: {
             var direction = new Buffer(2);
             var speed = new Buffer(2);
-            if(_isPlainObject(data)) {
+            if($.isPlainObject(data)) {
                 direction.writeInt16LE(data.direction);
                 speed.writeInt16LE(data.speed);
             } else {
