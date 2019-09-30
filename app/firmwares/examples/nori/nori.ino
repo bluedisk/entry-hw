@@ -105,6 +105,8 @@ void initModule(int port, int device) {
         case SOUND:
         case BUTTON:
         case AMBIENT:
+        case IRRANGE:
+        case TOUCH:
             pinMode(DPINS[port], INPUT);
             pinMode(APINS[port], INPUT);
             break;
@@ -122,10 +124,6 @@ void initModule(int port, int device) {
         case TEMPER:
             break;
         case ULTRASONIC:
-            break;
-        case IRRANGE:
-            break;
-        case TOUCH:
             break;
         case LCD:
             break;
@@ -145,31 +143,26 @@ void delModule(int port) {
         case SOUND:
         case BUTTON:
         case AMBIENT:
+        case IRRANGE:
+        case TOUCH:
+        case TONE:
+        case NEOPIXEL:
+        case TEMPER:
+        case ULTRASONIC:
             pinMode(DPINS[port], OUTPUT);
             digitalWrite(DPINS[port], LOW);
 
             pinMode(APINS[port], OUTPUT);
             digitalWrite(APINS[port], LOW);
             break;
+            
         case SERVO:
             digitalWrite(DPINS[port], LOW);
             digitalWrite(APINS[port], LOW);
             servos[port].detach();
             break;
 
-        case TONE:
-            break;
         case MOTOR:
-            break;
-        case NEOPIXEL:
-            break;
-        case TEMPER:
-            break;
-        case ULTRASONIC:
-            break;
-        case IRRANGE:
-            break;
-        case TOUCH:
             break;
         case LCD:
             break;
@@ -238,6 +231,22 @@ void runModule(int port, int device) {
     }
 }
 
+void sendDigitalStatus(int port) {
+  writeHead();
+  sendShort(digitalRead(DPINS[port]));
+  writeSerial(port);
+  writeSerial(ports[port]);
+  writeEnd();
+}
+
+void sendAnalogStatus(int port) {
+  writeHead();
+  sendFloat(analogRead(APINS[port]));
+  writeSerial(port);
+  writeSerial(ports[port]);
+  writeEnd();
+}
+
 void sendModuleValue(int port) {
     switch (ports[port]) {
         case ALIVE:
@@ -248,24 +257,16 @@ void sendModuleValue(int port) {
             // do nothing
             break;
         case VOLUME:
-            writeHead();
-            sendFloat(analogRead(APINS[port]));
-            writeEnd();
+            sendAnalogStatus(port);
             break;
         case SOUND:
-            writeHead();
-            sendFloat(analogRead(DPINS[port]));
-            writeEnd();
+            sendAnalogStatus(port);
             break;
         case BUTTON:
-            writeHead();
-            sendFloat(analogRead(DPINS[port]));
-            writeEnd();
+            sendDigitalStatus(port);
             break;
         case AMBIENT:
-            writeHead();
-            sendFloat(analogRead(APINS[port]));
-            writeEnd();
+            sendAnalogStatus(port);
             break;
         case SERVO:
             // do nothing
@@ -285,8 +286,10 @@ void sendModuleValue(int port) {
         case ULTRASONIC:
             break;
         case IRRANGE:
+            sendAnalogStatus(port);
             break;
         case TOUCH:
+            sendDigitalStatus(port);
             break;
         case LCD:
             // do nothing

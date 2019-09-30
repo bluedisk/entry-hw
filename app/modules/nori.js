@@ -32,7 +32,7 @@ function Module() {
         SHORT: 3,
     };
 
-    this.digitalPortTimeList = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    this.digitalPortTimeList = [0, 0, 0, 0];
 
     this.sensorData = {
         PORT: {
@@ -40,6 +40,11 @@ function Module() {
             '1': 0,
             '2': 0,
             '3': 0,
+        },
+        DEBUG: {
+            'type': 0,
+            'port': 0,
+            'value': 0,
         },
     };
 
@@ -56,7 +61,8 @@ function Module() {
 
 var sensorIdx = 0;
 
-Module.prototype.init = function(handler, config) {};
+Module.prototype.init = function(handler, config) {
+};
 
 Module.prototype.setSerialPort = function(sp) {
     var self = this;
@@ -145,7 +151,7 @@ Module.prototype.handleRemoteData = function(handler) {
                         self.makeSensorReadBuffer(
                             key,
                             dataObj.port,
-                            dataObj.data
+                            dataObj.data,
                         ),
                     ]);
                 }
@@ -182,14 +188,15 @@ Module.prototype.handleRemoteData = function(handler) {
 };
 
 Module.prototype.isRecentData = function(port, type, data) {
-    var that = this;
     var isRecent = false;
 
-    if (
-        this.recentCheckData[port].type === type &&
-        this.recentCheckData[port].data === data
-    ) {
-        isRecent = true;
+    if (port in this.recentCheckData) {
+        if (
+            this.recentCheckData[port].type === type &&
+            this.recentCheckData[port].data === data
+        ) {
+            isRecent = true;
+        }
     }
 
     return isRecent;
@@ -245,6 +252,10 @@ Module.prototype.handleLocalData = function(data) {
         var port = readData[readData.length - 2];
 
         self.sensorData.PORT[port] = value;
+
+        self.sensorData.DEBUG['type'] = type;
+        self.sensorData.DEBUG['port'] = port;
+        self.sensorData.DEBUG['value'] = value;
     });
 };
 
