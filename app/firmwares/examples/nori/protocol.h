@@ -1,10 +1,17 @@
 #include <Arduino.h>
 
-// 상태 상수
+// Actions
 #define GET     1
 #define SET     2
 #define RESET   3
+#define CFG     4
 
+// Types
+#define TYPE_INT8    1
+#define TYPE_FLOAT   2
+#define TYPE_SHORT   3
+#define TYPE_TEXT    4
+        
 // val Union
 union {
     byte byteVal[4];
@@ -20,9 +27,10 @@ union {
 
 typedef void (*ActionGetCallback)(int idx, int port, int device);
 typedef bool (*ActionSetCallback)(int idx, int port, int device);
+typedef void (*ActionResetCallback)(int idx, int port, int device);
 
 
-void setActionCallback(ActionGetCallback getCallback, ActionSetCallback setCallback);
+void setActionCallback(ActionGetCallback getCallback, ActionSetCallback setCallback, ActionResetCallback resetCallback);
 
 void processPacket();
 void stackData(unsigned char c);
@@ -37,7 +45,7 @@ void writeHead();
 void writeEnd();
 void writeSerial(unsigned char c);
 
-void sendString(String s);
+void sendText(String s);
 void sendFloat(float value);
 void sendShort(double value);
 

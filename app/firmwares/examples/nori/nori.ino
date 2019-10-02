@@ -1,6 +1,7 @@
 // 서보 라이브러리
 #include <Servo.h>
 #include "protocol.h"
+#include "TM1637Display.h"
 
 // noricoding 핀 설정
 #define PORT1D 5
@@ -16,6 +17,8 @@
 
 const int APINS[NORI_PORTS_CNT] = {PORT1A, PORT2A, PORT3A, PORT4A};
 const int DPINS[NORI_PORTS_CNT] = {PORT1D, PORT2D, PORT3D, PORT4D};
+
+#define CHECK_PHRASE "Hello Nori!"
 
 // 동작 상수
 #define ALIVE 0
@@ -39,19 +42,21 @@ const int DPINS[NORI_PORTS_CNT] = {PORT1D, PORT2D, PORT3D, PORT4D};
 
 // 전역변수 선언 시작
 Servo servos[NORI_PORTS_CNT];
+TM1637Display *segment[NORI_PORTS_CNT] = {NULL,NULL,NULL,NULL};
+
 int ports[NORI_PORTS_CNT] = {ALIVE, ALIVE, ALIVE, ALIVE};
 
 
 // 전역변수 선언 종료
 
 void actionGet(int idx, int port, int device);
-
 bool actionSet(int idx, int port, int device);
+void actionReset(int idx, int port, int device);
 
 void setup() {
     Serial.begin(115200);
     initPorts();
-    setActionCallback(actionGet, actionSet);
+    setActionCallback(actionGet, actionSet, actionReset);
     delay(200);
 }
 
@@ -88,6 +93,10 @@ bool actionSet(int idx, int port, int device) {
     runModule(port, device);
 
     return true;
+}
+
+void actionReset(int idx, int port, int device) {
+    changeModule(port, ALIVE);
 }
 
 void initModule(int port, int device) {
@@ -128,6 +137,13 @@ void initModule(int port, int device) {
         case LCD:
             break;
         case SEGMENT:
+            if ( segment[port] != NULL ) {
+              delete segment[port];
+            }
+
+            segment[port] = new TM1637Display(DPINS[port], APINS[port]);
+            segment[port]->setBrightness(0x0F);
+            segment[port]->clear();
             break;
     }
 }
@@ -167,6 +183,12 @@ void delModule(int port) {
         case LCD:
             break;
         case SEGMENT:
+            if ( segment[port] == NULL ) break;
+            
+            segment[port]->clear();
+            //segment[port]->showNumberDec(5555);
+            delete segment[port];
+            segment[port] = NULL;
             break;
     }
 }
@@ -179,11 +201,7 @@ void runModule(int port, int device) {
 
         case BUZZER:
             pinMode(DPINS[port], OUTPUT);
-            digitalWrite(DPINS[port], HIGH);
-
-            delay(readShort());
-
-            digitalWrite(DPINS[port], LOW);
+            digitalWrite(DPINS[port], readShort());
             break;
 
         case VOLUME:
@@ -226,7 +244,12 @@ void runModule(int port, int device) {
             break;
         case LCD:
             break;
-        case SEGMENT:
+        case SEGMENT: {
+            if ( segment[port] == NULL ) break;
+            int num = readShort();
+            int colon = readShort() * SEG_G;
+            segment[port]->showNumberDecEx(num, colon, false);
+        }
             break;
     }
 }
@@ -250,7 +273,11 @@ void sendAnalogStatus(int port) {
 void sendModuleValue(int port) {
     switch (ports[port]) {
         case ALIVE:
-            // do nothing
+            writeHead();
+            sendText(CHECK_PHRASE);
+            writeSerial(port);
+            writeSerial(ports[port]);
+            writeEnd();
             break;
 
         case BUZZER:

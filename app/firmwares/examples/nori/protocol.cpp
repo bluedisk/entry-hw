@@ -11,11 +11,12 @@ uint8_t command_index = 0;
 
 ActionGetCallback actionGetCallback = NULL;
 ActionSetCallback actionSetCallback = NULL;
+ActionResetCallback actionResetCallback = NULL;
 
-
-void setActionCallback(ActionGetCallback getCallback, ActionSetCallback setCallback) {
+void setActionCallback(ActionGetCallback getCallback, ActionSetCallback setCallback, ActionResetCallback resetCallback) {
     actionGetCallback = getCallback;
     actionSetCallback = setCallback;
+    actionResetCallback = resetCallback;
 }
 
 void processPacket() {
@@ -26,7 +27,7 @@ void processPacket() {
 }
 
 void stackData(unsigned char c) {
-    if (c == 0x55 && !isStart) {
+    if (c == 0x2D && !isStart) {
         if (prevc == 0xff) {
             packetOffset = 1;
             isStart = true;
@@ -92,7 +93,10 @@ void dispatchPacket() {
         }
             break;
         case RESET: {
-            callOK();
+            if (actionResetCallback) {
+                actionResetCallback(idx, port, device);
+                callOK();
+            }
         }
             break;
     }
@@ -105,7 +109,7 @@ void writeBuffer(int index, unsigned char c) {
 
 void writeHead() {
     writeSerial(0xff);
-    writeSerial(0x55);
+    writeSerial(0x2D);
 }
 
 void writeEnd() {
@@ -116,9 +120,9 @@ void writeSerial(unsigned char c) {
     Serial.write(c);
 }
 
-void sendString(String s) {
+void sendText(String s) {
     int l = s.length();
-    writeSerial(4);
+    writeSerial(TYPE_TEXT);
     writeSerial(l);
     for (int i = 0; i < l; i++) {
         writeSerial(s.charAt(i));
@@ -126,7 +130,7 @@ void sendString(String s) {
 }
 
 void sendFloat(float value) {
-    writeSerial(2);
+    writeSerial(TYPE_FLOAT);
     val.floatVal = value;
     writeSerial(val.byteVal[0]);
     writeSerial(val.byteVal[1]);
@@ -135,7 +139,7 @@ void sendFloat(float value) {
 }
 
 void sendShort(double value) {
-    writeSerial(3);
+    writeSerial(TYPE_SHORT);
     valShort.shortVal = value;
     writeSerial(valShort.byteVal[0]);
     writeSerial(valShort.byteVal[1]);
@@ -165,13 +169,13 @@ long readLong() {
 
 void callOK() {
     writeSerial(0xff);
-    writeSerial(0x55);
+    writeSerial(0x2D);
     writeEnd();
 }
 
 void callDebug(char c) {
     writeSerial(0xff);
-    writeSerial(0x55);
+    writeSerial(0x2D);
     writeSerial(c);
     writeEnd();
 }
