@@ -3,7 +3,7 @@
 // 버퍼
 char buffer[52];
 unsigned char prevc = 0;
-byte dataLen;
+byte dataLen = 0;
 bool isStart = false;
 unsigned char packetOffset = 0;
 
@@ -165,6 +165,19 @@ long readLong() {
     val.byteVal[2] = readBuffer();
     val.byteVal[3] = readBuffer();
     return val.longVal;
+}
+
+String readString() {
+    int len =  readBuffer();
+    char* buf = calloc(len+1, 1);
+
+    memcpy(buf, buffer[readIndex], len);
+    String str = String(buf);
+    free(buf);
+
+    readIndex += len;
+
+    return str;
 }
 
 void callOK() {

@@ -28,7 +28,7 @@ function Module() {
         CFG: 4,
     };
 
-    this.sensorValueSize = {
+    this.sensorValueFormat = {
         INT8: 1,
         FLOAT: 2,
         SHORT: 3,
@@ -53,7 +53,7 @@ function Module() {
         },
     };
 
-    this.checkPhrase = 'Hello Nori!';
+    this.checkPhrase = 'HiNori!';
 
     this.defaultOutput = {};
 
@@ -72,7 +72,6 @@ Module.prototype.init = function(handler, config) {
 };
 
 Module.prototype.setSerialPort = function(sp) {
-    const self = this;
     this.sp = sp;
 };
 
@@ -80,7 +79,7 @@ Module.prototype.requestInitialData = function() {
     return this.makeSensorReadBuffer(this.sensorTypes.ALIVE, 0);
 };
 
-Module.prototype.checkInitialData = function(data, config) {
+Module.prototype.checkInitialData = function(data, _) {
     const datas = this.getDataByBuffer(data);
 
     return datas.some((data) => {
@@ -104,7 +103,7 @@ Module.prototype.afterConnect = function(that, cb) {
     }
 };
 
-Module.prototype.validateLocalData = function(data) {
+Module.prototype.validateLocalData = function(_) {
     return true;
 };
 
@@ -242,21 +241,21 @@ Module.prototype.parsingPacket = function(data) {
     let value = 0;
 
     switch (readData[0]) {
-        case this.sensorValueSize.INT8: {
-            value = new Buffer(readData.subarray(1, 2)).readInt8();
+        case this.sensorValueFormat.INT8: {
+            value = new Buffer(readData.subarray(1, 2)).readInt8(0);
             value = Math.round(value * 100) / 100;
             break;
         }
-        case this.sensorValueSize.FLOAT: {
-            value = new Buffer(readData.subarray(1, 5)).readFloatLE();
+        case this.sensorValueFormat.FLOAT: {
+            value = new Buffer(readData.subarray(1, 5)).readFloatLE(0);
             value = Math.round(value * 100) / 100;
             break;
         }
-        case this.sensorValueSize.SHORT: {
-            value = new Buffer(readData.subarray(1, 3)).readInt16LE();
+        case this.sensorValueFormat.SHORT: {
+            value = new Buffer(readData.subarray(1, 3)).readInt16LE(0);
             break;
         }
-        case this.sensorValueSize.TEXT: {
+        case this.sensorValueFormat.TEXT: {
             const len = readData[1];
             value = new Buffer(readData.subarray(2, 2 + len)).toString();
             break;
@@ -284,17 +283,23 @@ Module.prototype.handleLocalData = function(data) {
     const self = this;
     const datas = this.getDataByBuffer(data);
 
-    datas.forEach(function(data) {
+    datas.forEach((data) => {
         const result = self.parsingPacket(data);
         if (!result) {
             return;
         }
 
-        self.sensorData.PORT[result.port] = result.value;
+        if (result.type !== self.sensorTypes.ALIVE) {
+            self.sensorData.PORT[result.port] = result.value;
+        }
 
         self.sensorData.DEBUG.type = result.type;
         self.sensorData.DEBUG.port = result.port;
         self.sensorData.DEBUG.value = result.value;
+
+        if (result.port === 0) {
+            console.log(self.sensorData.DEBUG);
+        }
     });
 };
 
@@ -337,23 +342,24 @@ ff 2D len idx action device port  slot  data a
 Module.prototype.makeSensorReadBuffer = function(device, port, data) {
     let packet;
 
-    if (!data) {
-        packet = this.makePacket(device, port, this.actionTypes.GET);
-    } else {
+    if (data) {
         const value = new Buffer(2);
-        value.writeInt16LE(data);
+        value.writeInt16LE(data, 0);
         packet = this.makePacket(device, port, this.actionTypes.GET, value);
+    } else {
+        packet = this.makePacket(device, port, this.actionTypes.GET);
     }
 
     packetIdx++;
     if (packetIdx > 254) {
         packetIdx = 0;
     }
-    console.log("read " + port + " " + device + " " + packet);
+    console.log(`read ${port} ${device} ${packet}`);
 
     return packet;
 };
 
+//0xff 0x55 0x6 0x0 0x1 0xa 0x9 0x0 0x0 0xa
 //0xff 0x55 0x6 0x0 0x1 0xa 0x9 0x0 0x0 0xa
 Module.prototype.makeOutputBuffer = function(device, port, data) {
     let payload = null;
@@ -371,11 +377,11 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
         }
         default: {
             payload = new Buffer(2);
-            payload.writeInt16LE(data || 0);
+            payload.writeInt16LE(data || 0, 0);
             break;
         }
     }
-    console.log("output " + port + " " + device + " " + payload.length);
+    console.log(`output ${port} ${device} ${payload.length}`);
 
     return this.makePacket(device, port, this.actionTypes.SET, payload);
 };
@@ -384,7 +390,7 @@ Module.prototype.getDataByBuffer = function(buffer) {
     const datas = [];
     let lastIndex = 0;
     buffer.forEach((value, idx) => {
-        if (value == 13 && buffer[idx + 1] == 10) {
+        if (value === 13 && buffer[idx + 1] === 10) {
             datas.push(buffer.subarray(lastIndex, idx));
             lastIndex = idx + 2;
         }

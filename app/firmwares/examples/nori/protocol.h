@@ -52,6 +52,7 @@ void sendShort(double value);
 short readShort();
 float readFloat();
 long readLong();
+String readString();
 
 void callOK();
 void callDebug(char c);
