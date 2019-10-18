@@ -19,6 +19,8 @@
 const int ANALOG_PINS[NORI_PORT_CNT] = {PORT1A, PORT2A, PORT3A, PORT4A};
 const int DIGITAL_PINS[NORI_PORT_CNT] = {PORT1D, PORT2D, PORT3D, PORT4D};
 
+//
+#define MINIMUM_LOOP_CYCLE  25  // millis
 #define CHECK_PHRASE "HiNori!"
 
 // 동작 상수
@@ -38,8 +40,9 @@ const int DIGITAL_PINS[NORI_PORT_CNT] = {PORT1D, PORT2D, PORT3D, PORT4D};
 #define ULTRASONIC  11
 #define IRRANGE     12
 #define TOUCH       13
-#define LCD         14
+#define TEXTLCD     14
 #define SEGMENT     15
+
 
 // 전역변수 선언 시작
 typedef struct tagPort {
@@ -76,6 +79,16 @@ void setup() {
     initPorts();
     setActionCallback(actionGet, actionSet, actionReset);
     delay(200);
+
+
+
+    LCD1602* test =  new LCD1602(PORT1A, PORT1D);
+    test->begin();
+    test->setBacklight(HIGH);
+    test->home();
+    test->print("test!");
+    delay(3000);
+    delete test;
 }
 
 void resetPort(Port &port, int analog = OUTPUT, int digital = OUTPUT) {
@@ -104,11 +117,13 @@ void sendModuleValues() {
     }
 }
 
+unsigned long started_time = 0;
 void loop() {
+    started_time = millis();
     processPacket();
-    delay(15);
     sendModuleValues();
-    delay(10);
+
+    while(millis() - started_time <= MINIMUM_LOOP_CYCLE) delay(1);
 }
 
 void actionGet(int idx, int port_idx, int device) {
@@ -170,7 +185,7 @@ void initModule(Port& port, int device) {
             port.ultrasonic = 0;
             break;
 
-        case LCD:
+        case TEXTLCD:
             if (port.devLcd != NULL) {
                 delete port.devLcd;
             }
@@ -220,10 +235,11 @@ void delModule(Port& port) {
         case MOTOR:
             break;
 
-        case LCD:
+        case TEXTLCD:
             if (port.devLcd == NULL) break;
 
-            port.devLcd->setBacklight(LOW);
+            //port.devLcd->setBacklight(LOW);
+            port.devLcd->clear();
             delete port.devLcd;
             port.devLcd = NULL;
             break;
@@ -232,7 +248,6 @@ void delModule(Port& port) {
             if (port.devSegment == NULL) break;
 
             port.devSegment->clear();
-            //port.devSegment->showNumberDec(5555);
             delete port.devSegment;
             port.devSegment = NULL;
             break;
@@ -293,23 +308,25 @@ void setModule(Port& port) {
         case TOUCH:
             // Do Nothing
             break;
-        case LCD:
-            if (port.devLcd == NULL) break;
-            String text = readString();
-            port.devLcd->print(text);
+        case TEXTLCD:
+            if (port.devLcd != NULL) {
+                String text = readString();
+                port.devLcd->print("123");
+            }
             break;
 
-        case SEGMENT: {
-            if (port.devSegment == NULL) break;
-            int num = readShort();
-            int colon = readShort() * SEG_G;
-            int val = num + colon * 10000;
+        case SEGMENT:
+            if (port.devSegment != NULL) {
+                int num = readShort();
+                int colon = readShort() * SEG_G;
+                int val = num + colon * 10000;
 
-            if (val != port.lastSegment) {
-                port.devSegment->showNumberDecEx(num, colon, false);
-                port.lastSegment = val;
+                if (val != port.lastSegment) {
+                    port.devSegment->showNumberDecEx(num, colon, false);
+                    port.lastSegment = val;
+                }
             }
-        }
+
             break;
     }
 }
@@ -404,7 +421,7 @@ void sendModuleValue(Port& port) {
         case TOUCH:
             sendDigitalStatus(port);
             break;
-        case LCD:
+        case TEXTLCD:
             // do nothing
             break;
         case SEGMENT:

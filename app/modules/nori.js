@@ -293,13 +293,13 @@ Module.prototype.handleLocalData = function(data) {
             self.sensorData.PORT[result.port] = result.value;
         }
 
-        self.sensorData.DEBUG.type = result.type;
-        self.sensorData.DEBUG.port = result.port;
-        self.sensorData.DEBUG.value = result.value;
-
-        if (result.port === 0) {
-            console.log(self.sensorData.DEBUG);
-        }
+        // self.sensorData.DEBUG.type = result.type;
+        // self.sensorData.DEBUG.port = result.port;
+        // self.sensorData.DEBUG.value = result.value;
+        //
+        // if (result.port === 0) {
+        //     console.log(self.sensorData.DEBUG);
+        // }
     });
 };
 
@@ -354,7 +354,7 @@ Module.prototype.makeSensorReadBuffer = function(device, port, data) {
     if (packetIdx > 254) {
         packetIdx = 0;
     }
-    console.log(`read ${port} ${device} ${packet}`);
+    //console.log(`read ${port} ${device} ${packet}`);
 
     return packet;
 };
@@ -381,7 +381,7 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
             break;
         }
     }
-    console.log(`output ${port} ${device} ${payload.length}`);
+    // console.log(`output ${port} ${device} ${payload.length}`);
 
     return this.makePacket(device, port, this.actionTypes.SET, payload);
 };

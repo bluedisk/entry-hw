@@ -81,10 +81,10 @@ void dispatchPacket() {
     command_index = (uint8_t) idx; // ???
 
     switch (action) {
-        case GET: 
+        case GET:
             if (actionGetCallback)
                 actionGetCallback(idx, port, device);
-        
+
             break;
         case SET: {
             if (actionSetCallback)
@@ -169,9 +169,9 @@ long readLong() {
 
 String readString() {
     int len =  readBuffer();
-    char* buf = calloc(len+1, 1);
+    char* buf = (char* )calloc(len+1, 1);
 
-    memcpy(buf, buffer[readIndex], len);
+    memcpy(buf, &buffer[readIndex], len);
     String str = String(buf);
     free(buf);
 
