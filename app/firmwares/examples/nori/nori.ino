@@ -79,16 +79,6 @@ void setup() {
     initPorts();
     setActionCallback(actionGet, actionSet, actionReset);
     delay(200);
-
-
-
-    LCD1602* test =  new LCD1602(PORT1A, PORT1D);
-    test->begin();
-    test->setBacklight(HIGH);
-    test->home();
-    test->print("test!");
-    delay(3000);
-    delete test;
 }
 
 void resetPort(Port &port, int analog = OUTPUT, int digital = OUTPUT) {
@@ -194,6 +184,7 @@ void initModule(Port& port, int device) {
             port.devLcd->begin();
             port.devLcd->setBacklight(HIGH);
             port.devLcd->home();
+            port.devLcd->autoscroll();
             break;
 
         case SEGMENT:
@@ -228,28 +219,29 @@ void delModule(Port& port) {
             break;
 
         case SERVO:
-            if (port.devServo == NULL) break;
-            port.devServo->detach();
+            if (port.devServo != NULL) {
+                port.devServo->detach();
+            }
             break;
 
         case MOTOR:
             break;
 
         case TEXTLCD:
-            if (port.devLcd == NULL) break;
-
-            //port.devLcd->setBacklight(LOW);
-            port.devLcd->clear();
-            delete port.devLcd;
-            port.devLcd = NULL;
+            if (port.devLcd != NULL) {
+                //port.devLcd->setBacklight(LOW);
+                port.devLcd->clear();
+                delete port.devLcd;
+                port.devLcd = NULL;
+            }
             break;
 
         case SEGMENT:
-            if (port.devSegment == NULL) break;
-
-            port.devSegment->clear();
-            delete port.devSegment;
-            port.devSegment = NULL;
+            if (port.devSegment != NULL) {
+                port.devSegment->clear();
+                delete port.devSegment;
+                port.devSegment = NULL;
+            }
             break;
     }
 
@@ -281,12 +273,13 @@ void setModule(Port& port) {
             // Do Nothing
             break;
         case SERVO: {
-            if (port.devServo == NULL) break;
-
-            int v = readShort();
-            if (v >= 0 && v <= 180) {
-                port.devServo->write(v);
+            if (port.devServo != NULL) {
+                int v = readShort();
+                if (v >= 0 && v <= 180) {
+                    port.devServo->write(v);
+                }
             }
+
         }
             break;
 
@@ -310,8 +303,11 @@ void setModule(Port& port) {
             break;
         case TEXTLCD:
             if (port.devLcd != NULL) {
-                String text = readString();
-                port.devLcd->print("123");
+                const int line = readBuffer();
+                char* text = readString();
+                port.devLcd->setCursor(0, line);
+                port.devLcd->print(text);
+                free(text);
             }
             break;
 

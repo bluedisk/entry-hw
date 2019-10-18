@@ -17,7 +17,7 @@ function Module() {
         ULTRASONIC: 11,
         IRRANGE: 12,
         TOUCH: 13,
-        LCD: 14,
+        TEXTLCD: 14,
         SEGMENT: 15,
     };
 
@@ -188,6 +188,8 @@ Module.prototype.handleRemoteData = function(handler) {
                             buffer,
                             self.makeOutputBuffer(data.type, port, data.data),
                         ]);
+
+                        console.log(buffer);
                     }
                 }
             }
@@ -375,13 +377,30 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
             }
             break;
         }
+        case this.sensorTypes.TEXTLCD: {
+            if ($.isPlainObject(data)) {
+                const textline = data.line || 0;
+                const textdata = data.value || "";
+
+                payload = Buffer.concat([
+                    new Buffer([
+                        textline,
+                        textdata.length,
+                    ]),
+                    Buffer.from(textdata, 'utf8'),
+                ]);
+            } else {
+                return this.makePacket(device, port, this.actionTypes.RESET);
+            }
+            break;
+        }
         default: {
             payload = new Buffer(2);
             payload.writeInt16LE(data || 0, 0);
             break;
         }
     }
-    // console.log(`output ${port} ${device} ${payload.length}`);
+    console.log(`output ${port} ${device} ${payload.length}`);
 
     return this.makePacket(device, port, this.actionTypes.SET, payload);
 };

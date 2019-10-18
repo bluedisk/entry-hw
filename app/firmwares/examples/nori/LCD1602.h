@@ -204,7 +204,7 @@ private:
     uint8_t _Addr = LCD_ADDR;             // I2C Address of the IO expander
     SoftwareWire *_i2cio = NULL;            // I2CIO PCF8574* expansion module driver I2CLCDextraIO
 
-    const uint8_t _backlightPinMask = BIT_BL;
+    const uint8_t _backlightPinMask = (1 << BIT_BL);
     uint8_t _backlightStsMask = LCD_NOBACKLIGHT;
 
     const uint8_t _polarity = POSITIVE;

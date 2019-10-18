@@ -167,17 +167,15 @@ long readLong() {
     return val.longVal;
 }
 
-String readString() {
+char* readString() {
     int len =  readBuffer();
-    char* buf = (char* )calloc(len+1, 1);
+    char* buf = (char* )malloc(len+1);
 
+    memset(buf, 0, len+1);
     memcpy(buf, &buffer[readIndex], len);
-    String str = String(buf);
-    free(buf);
-
     readIndex += len;
 
-    return str;
+    return buf;
 }
 
 void callOK() {
