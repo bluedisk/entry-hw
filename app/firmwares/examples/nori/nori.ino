@@ -183,8 +183,8 @@ void initModule(Port& port, int device) {
             port.devLcd = new LCD1602(port.analog_pin, port.digital_pin);
             port.devLcd->begin();
             port.devLcd->setBacklight(HIGH);
+            port.devLcd->clear();
             port.devLcd->home();
-            port.devLcd->autoscroll();
             break;
 
         case SEGMENT:

@@ -188,8 +188,6 @@ Module.prototype.handleRemoteData = function(handler) {
                             buffer,
                             self.makeOutputBuffer(data.type, port, data.data),
                         ]);
-
-                        console.log(buffer);
                     }
                 }
             }
@@ -380,7 +378,8 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
         case this.sensorTypes.TEXTLCD: {
             if ($.isPlainObject(data)) {
                 const textline = data.line || 0;
-                const textdata = data.value || "";
+                let textdata = data.value || "";
+                //textdata = textdata.substring(0, 16).padEnd(16, " ");
 
                 payload = Buffer.concat([
                     new Buffer([
@@ -400,7 +399,7 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
             break;
         }
     }
-    console.log(`output ${port} ${device} ${payload.length}`);
+    //console.log(`output ${port} ${device} ${payload.length}`);
 
     return this.makePacket(device, port, this.actionTypes.SET, payload);
 };
