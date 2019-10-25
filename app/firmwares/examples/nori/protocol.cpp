@@ -138,7 +138,21 @@ void sendFloat(float value) {
     writeSerial(val.byteVal[3]);
 }
 
-void sendShort(double value) {
+void sendTwinFloat(float value1, float value2){
+    writeSerial(TYPE_TWIN);
+    val.floatVal = value1;
+    writeSerial(val.byteVal[0]);
+    writeSerial(val.byteVal[1]);
+    writeSerial(val.byteVal[2]);
+    writeSerial(val.byteVal[3]);
+    val.floatVal = value2;
+    writeSerial(val.byteVal[0]);
+    writeSerial(val.byteVal[1]);
+    writeSerial(val.byteVal[2]);
+    writeSerial(val.byteVal[3]);
+}
+
+void sendShort(short value) {
     writeSerial(TYPE_SHORT);
     valShort.shortVal = value;
     writeSerial(valShort.byteVal[0]);

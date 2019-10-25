@@ -3,6 +3,8 @@
 #include "protocol.h"
 #include "TM1637Display.h"
 #include "LCD1602.h"
+#include "SimpleDHT.h"
+#include "Adafruit_NeoPixel.h"
 
 // noricoding 핀 설정
 #define PORT1D 5
@@ -21,7 +23,7 @@ const int DIGITAL_PINS[NORI_PORT_CNT] = {PORT1D, PORT2D, PORT3D, PORT4D};
 
 //
 #define MINIMUM_LOOP_CYCLE  25  // millis
-#define CHECK_PHRASE "HiNori!"
+#define CHECK_PHRASE "HiNori!!"
 
 // 동작 상수
 #define ALIVE 0
@@ -43,17 +45,21 @@ const int DIGITAL_PINS[NORI_PORT_CNT] = {PORT1D, PORT2D, PORT3D, PORT4D};
 #define TEXTLCD     14
 #define SEGMENT     15
 
-
 // 전역변수 선언 시작
 typedef struct tagPort {
     // device classes pointers
     Servo *devServo = NULL;
     TM1637Display *devSegment = NULL;
     LCD1602 *devLcd = NULL;
+    SimpleDHT11* devDHT = NULL; // Temp. Humid. sensor
+    Adafruit_NeoPixel *devPixels = NULL;
 
     // device status
     int ultrasonic = 0;
     int lastSegment = 0;
+
+    float lastTemperature = 0;
+    float lastHumidity = 0;
 
     // port mode
     int status = ALIVE;
@@ -132,6 +138,7 @@ bool actionSet(int idx, int port_idx, int device) {
 
 void actionReset(int idx, int port_idx, int device) {
     Port& port = ports[port_idx];
+    changeModule(port, device);
     changeModule(port, ALIVE);
 }
 
@@ -167,9 +174,25 @@ void initModule(Port& port, int device) {
         case MOTOR:
             break;
         case NEOPIXEL:
+            if (port.devPixels != NULL) {
+                delete port.devPixels;
+            }
+
+            port.devPixels = new Adafruit_NeoPixel(10, port.digital_pin, NEO_RGB + NEO_KHZ800);
+            port.devPixels->begin();
+            port.devPixels->clear();
+            port.devPixels->show();
             break;
         case TEMPER:
+            if (port.devDHT != NULL) {
+                delete port.devDHT;
+            }
+
+            resetPort(port, INPUT, INPUT);
+            port.devDHT = new SimpleDHT11(port.digital_pin);
+            port.devDHT->read2(&port.lastTemperature, &port.lastHumidity, NULL);
             break;
+            
         case ULTRASONIC:
             resetPort(port, INPUT, OUTPUT);
             port.ultrasonic = 0;
@@ -183,7 +206,6 @@ void initModule(Port& port, int device) {
             port.devLcd = new LCD1602(port.analog_pin, port.digital_pin);
             port.devLcd->begin();
             port.devLcd->setBacklight(HIGH);
-            port.devLcd->clear();
             port.devLcd->home();
             break;
 
@@ -212,20 +234,35 @@ void delModule(Port& port) {
         case IRRANGE:
         case TOUCH:
         case TONE:
-        case NEOPIXEL:
-        case TEMPER:
         case ULTRASONIC:
             // do nothing
+            break;
+
+        case NEOPIXEL:
+            if (port.devPixels != NULL) {
+                port.devPixels->clear();
+                port.devPixels->show();
+                delete port.devPixels;
+                port.devPixels = NULL;
+            }
             break;
 
         case SERVO:
             if (port.devServo != NULL) {
                 port.devServo->detach();
+                delete port.devServo;
+                port.devServo = NULL;
             }
             break;
 
         case MOTOR:
             break;
+
+        case TEMPER:
+            if (port.devDHT != NULL) {
+                delete port.devDHT;
+                port.devDHT = NULL;
+            }
 
         case TEXTLCD:
             if (port.devLcd != NULL) {
@@ -272,15 +309,13 @@ void setModule(Port& port) {
         case AMBIENT:
             // Do Nothing
             break;
-        case SERVO: {
+        case SERVO: 
             if (port.devServo != NULL) {
                 int v = readShort();
                 if (v >= 0 && v <= 180) {
                     port.devServo->write(v);
                 }
             }
-
-        }
             break;
 
         case TONE:
@@ -288,6 +323,14 @@ void setModule(Port& port) {
         case MOTOR:
             break;
         case NEOPIXEL:
+            if (port.devPixels != NULL) {
+                const byte i = readBuffer();
+                const byte r = readBuffer();
+                const byte g = readBuffer();
+                const byte b = readBuffer();
+                port.devPixels->setPixelColor(i, port.devPixels->Color(r, g, b));
+                port.devPixels->show();
+            }
             break;
         case TEMPER:
             // Do Nothing
@@ -368,6 +411,16 @@ void sendUltrasonic(Port& port) {
     writeEnd();
 }
 
+void sendDHT11(Port& port) {
+    port.devDHT->read2(&port.lastTemperature, &port.lastHumidity, NULL);
+    
+    writeHead();
+    sendTwinFloat(port.lastTemperature, port.lastHumidity);
+    writeSerial(port.index);
+    writeSerial(port.status);
+    writeEnd();
+}
+
 void sendModuleValue(Port& port) {
     switch (port.status) {
         case ALIVE:
@@ -407,6 +460,7 @@ void sendModuleValue(Port& port) {
             // do nothing
             break;
         case TEMPER:
+            sendDHT11(port);
             break;
         case ULTRASONIC:
             sendUltrasonic(port);

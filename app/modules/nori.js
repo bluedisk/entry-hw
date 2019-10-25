@@ -33,6 +33,7 @@ function Module() {
         FLOAT: 2,
         SHORT: 3,
         TEXT: 4,
+        TWINFLOAT: 5,
     };
 
     this.magicCode = new Buffer([255, 45]);
@@ -53,7 +54,7 @@ function Module() {
         },
     };
 
-    this.checkPhrase = 'HiNori!';
+    this.checkPhrase = 'HiNori!!';
 
     this.defaultOutput = {};
 
@@ -174,7 +175,8 @@ Module.prototype.handleRemoteData = function(handler) {
     if (setDatas) {
         const setKeys = Object.keys(setDatas);
         setKeys.forEach((port) => {
-            const data = setDatas[port];
+            const data = setDatas[port];        
+
             if (data) {
                 if (self.digitalPortTimeList[port] < data.time) {
                     self.digitalPortTimeList[port] = data.time;
@@ -244,6 +246,15 @@ Module.prototype.parsingPacket = function(data) {
         case this.sensorValueFormat.INT8: {
             value = new Buffer(readData.subarray(1, 2)).readInt8(0);
             value = Math.round(value * 100) / 100;
+            break;
+        }
+        case this.sensorValueFormat.TWINFLOAT: {
+            value =[
+                new Buffer(readData.subarray(1, 5)).readFloatLE(0),
+                new Buffer(readData.subarray(5, 9)).readFloatLE(0),
+            ] 
+            value[0] = Math.round(value[0] * 100) / 100;
+            value[1] = Math.round(value[1] * 100) / 100;
             break;
         }
         case this.sensorValueFormat.FLOAT: {
@@ -365,6 +376,19 @@ Module.prototype.makeOutputBuffer = function(device, port, data) {
     let payload = null;
 
     switch (device) {
+        case this.sensorTypes.NEOPIXEL: {
+            payload = new Buffer(4);
+            if ($.isPlainObject(data)) {
+                payload.writeUInt8(data.index, 0);
+                payload.writeUInt8(data.r, 1);
+                payload.writeUInt8(data.g, 2);
+                payload.writeUInt8(data.b, 3);
+            } else {
+                return this.makePacket(device, port, this.actionTypes.RESET);
+            }
+            break;
+        }
+
         case this.sensorTypes.SEGMENT: {
             payload = new Buffer(4);
             if ($.isPlainObject(data)) {

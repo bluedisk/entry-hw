@@ -11,6 +11,7 @@
 #define TYPE_FLOAT   2
 #define TYPE_SHORT   3
 #define TYPE_TEXT    4
+#define TYPE_TWIN    5
         
 // val Union
 union {
@@ -47,7 +48,8 @@ void writeSerial(unsigned char c);
 
 void sendText(String s);
 void sendFloat(float value);
-void sendShort(double value);
+void sendShort(short value);
+void sendTwinFloat(float value1, float value2);
 
 short readShort();
 float readFloat();
