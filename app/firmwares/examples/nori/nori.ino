@@ -192,7 +192,7 @@ void initModule(Port& port, int device) {
             port.devDHT = new SimpleDHT11(port.digital_pin);
             port.devDHT->read2(&port.lastTemperature, &port.lastHumidity, NULL);
             break;
-            
+
         case ULTRASONIC:
             resetPort(port, INPUT, OUTPUT);
             port.ultrasonic = 0;
@@ -309,7 +309,7 @@ void setModule(Port& port) {
         case AMBIENT:
             // Do Nothing
             break;
-        case SERVO: 
+        case SERVO:
             if (port.devServo != NULL) {
                 int v = readShort();
                 if (v >= 0 && v <= 180) {
@@ -413,7 +413,7 @@ void sendUltrasonic(Port& port) {
 
 void sendDHT11(Port& port) {
     port.devDHT->read2(&port.lastTemperature, &port.lastHumidity, NULL);
-    
+
     writeHead();
     sendTwinFloat(port.lastTemperature, port.lastHumidity);
     writeSerial(port.index);
@@ -438,7 +438,7 @@ void sendModuleValue(Port& port) {
             sendAnalogStatus(port);
             break;
         case SOUND:
-            sendAnalogStatus(port);
+            sendDigitalStatus(port);
             break;
         case BUTTON:
             sendDigitalStatus(port);
@@ -466,7 +466,7 @@ void sendModuleValue(Port& port) {
             sendUltrasonic(port);
             break;
         case IRRANGE:
-            sendDigitalStatus(port);
+            sendAnalogStatus(port);
             break;
         case TOUCH:
             sendDigitalStatus(port);
