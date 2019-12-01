@@ -91,7 +91,7 @@ void resetPort(Port &port, int analog = OUTPUT, int digital = OUTPUT) {
     pinMode(port.analog_pin, analog);
     if (analog == OUTPUT) digitalWrite(port.analog_pin, LOW);
 
-    pinMode(port.digital_pin, OUTPUT);
+    pinMode(port.digital_pin, digital);
     if (digital == OUTPUT) digitalWrite(port.digital_pin, LOW);
 }
 
@@ -160,6 +160,10 @@ void initModule(Port& port, int device) {
         case TOUCH:
             resetPort(port, INPUT, INPUT);
             break;
+        case TONE:
+            break;
+        case MOTOR:
+            break;
 
         case SERVO:
             if (port.devServo != NULL) {
@@ -169,10 +173,6 @@ void initModule(Port& port, int device) {
             port.devServo->attach(port.digital_pin);
             break;
 
-        case TONE:
-            break;
-        case MOTOR:
-            break;
         case NEOPIXEL:
             if (port.devPixels != NULL) {
                 delete port.devPixels;
@@ -235,6 +235,7 @@ void delModule(Port& port) {
         case TOUCH:
         case TONE:
         case ULTRASONIC:
+        case MOTOR:
             // do nothing
             break;
 
@@ -253,9 +254,6 @@ void delModule(Port& port) {
                 delete port.devServo;
                 port.devServo = NULL;
             }
-            break;
-
-        case MOTOR:
             break;
 
         case TEMPER:
@@ -289,6 +287,16 @@ void delModule(Port& port) {
 void setModule(Port& port) {
     switch (port.status) {
         case ALIVE:
+        case VOLUME:
+        case SOUND:
+        case BUTTON:
+        case AMBIENT:
+        case TEMPER:
+        case ULTRASONIC:
+        case IRRANGE:
+        case TOUCH:
+        case TONE:
+        case MOTOR:
             // do nothing
             break;
 
@@ -296,19 +304,7 @@ void setModule(Port& port) {
             pinMode(port.digital_pin, OUTPUT);
             digitalWrite(port.digital_pin, readShort());
             break;
-
-        case VOLUME:
-            // Do Nothing
-            break;
-        case SOUND:
-            // Do Nothing
-            break;
-        case BUTTON:
-            // Do Nothing
-            break;
-        case AMBIENT:
-            // Do Nothing
-            break;
+            
         case SERVO:
             if (port.devServo != NULL) {
                 int v = readShort();
@@ -318,10 +314,6 @@ void setModule(Port& port) {
             }
             break;
 
-        case TONE:
-            break;
-        case MOTOR:
-            break;
         case NEOPIXEL:
             if (port.devPixels != NULL) {
                 const byte i = readBuffer();
@@ -332,18 +324,7 @@ void setModule(Port& port) {
                 port.devPixels->show();
             }
             break;
-        case TEMPER:
-            // Do Nothing
-            break;
-        case ULTRASONIC:
-            // Do Nothing
-            break;
-        case IRRANGE:
-            // Do Nothing
-            break;
-        case TOUCH:
-            // Do Nothing
-            break;
+            
         case TEXTLCD:
             if (port.devLcd != NULL) {
                 const int line = readBuffer();
@@ -430,50 +411,34 @@ void sendModuleValue(Port& port) {
             writeSerial(port.status);
             writeEnd();
             break;
-
-        case BUZZER:
-            // do nothing
-            break;
-        case VOLUME:
-            sendAnalogStatus(port);
-            break;
-        case SOUND:
-            sendDigitalStatus(port);
-            break;
-        case BUTTON:
-            sendDigitalStatus(port);
-            break;
-        case AMBIENT:
-            sendAnalogStatus(port);
-            break;
-        case SERVO:
-            // do nothing
-            break;
-
-        case TONE:
-            // do nothing
-            break;
-        case MOTOR:
-            // do nothing
-            break;
-        case NEOPIXEL:
-            // do nothing
-            break;
         case TEMPER:
             sendDHT11(port);
             break;
         case ULTRASONIC:
             sendUltrasonic(port);
             break;
-        case IRRANGE:
-            sendAnalogStatus(port);
-            break;
-        case TOUCH:
-            sendDigitalStatus(port);
-            break;
+
+        case BUZZER:
+        case SERVO:
+        case TONE:
+        case MOTOR:
+        case NEOPIXEL:
         case TEXTLCD:
             // do nothing
             break;
+            
+        case VOLUME:
+        case SOUND:
+        case BUTTON:
+        case TOUCH:
+            sendDigitalStatus(port);
+            break;
+            
+        case AMBIENT:
+        case IRRANGE:
+            sendAnalogStatus(port);
+            break;
+            
         case SEGMENT:
             port.lastSegment = 0;
             break;
